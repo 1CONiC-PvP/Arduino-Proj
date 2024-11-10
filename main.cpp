@@ -1,76 +1,84 @@
-#include <LiquidCrystal.h> // Include library for LCD
+#include <LiquidCrystal.h>
 
-// Pin setup for soil moisture and pH sensors
-const int moisturePin = A0;      // Analog pin for soil moisture sensor
-const int pHSensorPin = A1;      // Analog pin for pH sensor (optional)
+// LCD Pins: RS, E, D4, D5, D6, D7
+LiquidCrystal lcd(10, 8, 2, 3, 0, 7); // Updated LCD pin connections
 
-// LED pin setup
-const int greenLED = 2;          // Green LED for healthy moisture
-const int yellowLED = 3;         // Yellow LED for moderate moisture
-const int redLED = 4;            // Red LED for dry soil
+// Soil Moisture Sensor Pins
+const int moistureAnalogPin = A3; // Connected to A0 on sensor
+const int moistureDigitalPin = 11; // Connected to D0 on sensor
 
-// LCD setup (16x2)
-LiquidCrystal lcd(12, 11, 5, 4, 3, 2); // Adjust pins if needed
+// LED Pins
+const int greenLED = 5;
+const int yellowLED = 9;
+const int redLED = 6;
 
-// Variables for sensor readings
-int moistureValue = 0; // Stores moisture sensor reading
-float pHValue = 0;     // Stores pH sensor reading (if used)
+int moistureValue = 0;
+int digitalMoistureStatus = 0;
 
 void setup() {
-  // Initialize serial communication
+  // Initialize Serial Monitor for debugging
   Serial.begin(9600);
+  
+  // Initialize LCD
+  lcd.begin(16, 2); // Set up the LCD with 16 columns and 2 rows
+  lcd.print("Soil Monitor");  // Display initial message
+  delay(2000); // Delay to let the message show
+  lcd.clear(); // Clear the LCD for upcoming readings
 
-  // Set up LED pins as outputs
+  // Set up LED pins
   pinMode(greenLED, OUTPUT);
   pinMode(yellowLED, OUTPUT);
   pinMode(redLED, OUTPUT);
 
-  // Initialize the LCD
-  lcd.begin(16, 2);         // Set LCD to 16x2 characters
-  lcd.print("Soil Monitor"); // Initial message
-  delay(2000);               // Display the message briefly
-  lcd.clear();
+  // Set up digital moisture pin
+  pinMode(moistureDigitalPin, INPUT);
 }
 
 void loop() {
-  // Read moisture sensor value
-  moistureValue = analogRead(moisturePin);
-  Serial.print("Soil Moisture Level: ");
-  Serial.println(moistureValue);
+  // Read soil moisture analog value
+  moistureValue = analogRead(moistureAnalogPin);
+  int moisturePercent = map(moistureValue, 0, 1023, 0, 100);
 
-  // Check moisture level and update LEDs
-  if (moistureValue > 800) {
-    digitalWrite(greenLED, HIGH);    // Optimal moisture
+  // Read digital moisture status (0 if below threshold, 1 if above)
+  digitalMoistureStatus = digitalRead(moistureDigitalPin);
+
+  // Display moisture percentage on the LCD
+  lcd.setCursor(0, 0);
+  lcd.print("Moisture: ");
+  lcd.print(moisturePercent);
+  lcd.print("%   "); // Extra spaces to clear previous characters
+  
+  // Display condition on the LCD and control LEDs based on analog reading
+  if (moisturePercent > 70) {
+    digitalWrite(greenLED, HIGH);
     digitalWrite(yellowLED, LOW);
     digitalWrite(redLED, LOW);
-    lcd.setCursor(0, 0);
-    lcd.print("Moisture: Good    ");
-  }
-  else if (moistureValue > 400) {
+    lcd.setCursor(0, 1);
+    lcd.print("Status: Good    ");
+  } 
+  else if (moisturePercent > 40) {
     digitalWrite(greenLED, LOW);
-    digitalWrite(yellowLED, HIGH);   // Moderate moisture
+    digitalWrite(yellowLED, HIGH);
     digitalWrite(redLED, LOW);
-    lcd.setCursor(0, 0);
-    lcd.print("Moisture: Moderate");
-  }
+    lcd.setCursor(0, 1);
+    lcd.print("Status: Moderate");
+  } 
   else {
     digitalWrite(greenLED, LOW);
     digitalWrite(yellowLED, LOW);
-    digitalWrite(redLED, HIGH);      // Low moisture
-    lcd.setCursor(0, 0);
-    lcd.print("Moisture: Low     ");
+    digitalWrite(redLED, HIGH);
+    lcd.setCursor(0, 1);
+    lcd.print("Status: Low     ");
   }
 
-  // Optional: Read and display pH sensor value
-  int pHRawValue = analogRead(pHSensorPin);
-  pHValue = (pHRawValue * (5.0 / 1023)) * 3.5; // Adjust calculation based on pH sensor range
-  Serial.print("Soil pH Level: ");
-  Serial.println(pHValue);
+  // Print moisture reading to the Serial Monitor for debugging
+  Serial.print("Moisture Level (Analog): ");
+  Serial.print(moisturePercent);
+  Serial.println("%");
 
-  lcd.setCursor(0, 1);
-  lcd.print("pH: ");
-  lcd.print(pHValue, 1);  // Print pH with 1 decimal place
-  lcd.print("          "); // Clear remaining spaces if needed
+  // Print digital moisture status to the Serial Monitor
+  Serial.print("Moisture Status (Digital): ");
+  Serial.println(digitalMoistureStatus ? "Dry" : "Wet");
 
-  delay(1000); // Delay for readability
+  delay(2000); // Delay between readings for stability
 }
