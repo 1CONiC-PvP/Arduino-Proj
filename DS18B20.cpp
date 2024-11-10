@@ -93,5 +93,5 @@ void loop() {
   
   delay(2000); // Delay for readability
   lcd.clear(); // Clear LCD to switch back to main display
-// Sketch -----> Include Library -----> Manage Libraries, Install OneWire and DallasTemperature 
+// Sketch -----> Include Library -----> Manage Libraries, Install OneWire and DallasTemperature (DS18B20 Temp Sensor)
 }
